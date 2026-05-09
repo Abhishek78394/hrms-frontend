@@ -45,13 +45,15 @@ export default function Header() {
 
           <div className="flex items-center gap-4 group relative py-1">
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-black text-slate-900 leading-none">{user?.fullName || user?.username || "Admin"}</p>
+              <p className="text-sm font-black text-slate-900 leading-none">
+                {user?.fullName || (user?.firstName ? `${user.firstName} ${user.lastName}` : (user?.username || "Admin"))}
+              </p>
               <p className="text-[10px] font-black text-orange-500 mt-1.5 uppercase tracking-widest">{user?.role || "Staff"}</p>
             </div>
 
             <div className="w-11 h-11 rounded-2xl bg-orange-50 border-2 border-white shadow-lg overflow-hidden cursor-pointer ring-1 ring-slate-100 group-hover:ring-orange-500 transition-all duration-300">
               <img
-                src={user?.profileImage || `https://ui-avatars.com/api/?name=${user?.fullName || user?.username}&background=f97316&color=fff&bold=true`}
+                src={user?.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || (user?.firstName ? `${user.firstName} ${user.lastName}` : (user?.username || "Admin")))}&background=f97316&color=fff&bold=true`}
                 alt="Avatar"
                 className="w-full h-full object-cover"
               />

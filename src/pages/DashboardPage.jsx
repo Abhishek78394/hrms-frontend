@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { 
   Users, 
@@ -29,16 +30,15 @@ export default function DashboardPage() {
   const adminKpis = [
     { label: "Total Employees", value: stats?.employees || 0, icon: Users, color: "bg-orange-500 shadow-orange-100" },
     { label: "Attendance Summary", value: stats?.attendance || "94%", icon: Calendar, color: "bg-teal-500 shadow-teal-100" },
-    { label: "Pending Payroll", value: stats?.payroll || "$12.4k", icon: DollarSign, color: "bg-blue-500 shadow-blue-100" },
+    { label: "Pending Payroll", value: stats?.payroll || "₹1.24L", icon: DollarSign, color: "bg-blue-500 shadow-blue-100" },
     { label: "Open Jobs", value: stats?.performance || 4, icon: Briefcase, color: "bg-pink-500 shadow-pink-100" },
   ];
 
-  // Employee KPIs
   const employeeKpis = [
-    { label: "My Attendance", value: "98%", icon: Calendar, color: "bg-emerald-500 shadow-emerald-100" },
-    { label: "Leave Balance", value: "12 Days", icon: HandIcon, color: "bg-orange-500 shadow-orange-100" },
-    { label: "Upcoming Reviews", value: "2", icon: Briefcase, color: "bg-indigo-500 shadow-indigo-100" },
-    { label: "My Payslips", value: "Jan 2024", icon: DollarSign, color: "bg-blue-500 shadow-blue-100" },
+    { label: "My Attendance", value: stats?.myAttendance || "100%", icon: Calendar, color: "bg-emerald-500 shadow-emerald-100" },
+    { label: "Leave Balance", value: stats?.leaveBalance || "24 Days", icon: HandIcon, color: "bg-orange-500 shadow-orange-100" },
+    { label: "Upcoming Reviews", value: stats?.upcomingReviews || "0", icon: Briefcase, color: "bg-indigo-500 shadow-indigo-100" },
+    { label: "My Payslips", value: stats?.myPayslips || "N/A", icon: DollarSign, color: "bg-blue-500 shadow-blue-100" },
   ];
 
   const currentKpis = (role === "Admin" || role === "HR") ? adminKpis : employeeKpis;
@@ -70,7 +70,21 @@ export default function DashboardPage() {
       {/* KPI Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {currentKpis.map((kpi, i) => (
-          <StatCard key={i} {...kpi} link={role === "Employee" ? "View My Details" : "Manage Module"} />
+          <StatCard 
+            key={i} 
+            {...kpi} 
+            link={
+              kpi.label === "My Payslips" ? "View My Details" : 
+              kpi.label === "My Performance" ? "View History" : 
+              role === "Employee" ? "View My Details" : "Manage Module"
+            } 
+            to={
+              kpi.label === "My Payslips" ? "/ess/payslips" :
+              kpi.label === "My Performance" ? "/performance" :
+              kpi.label === "My Attendance" ? "/ess/attendance" :
+              kpi.label === "Leave Balance" ? "/ess/leave" : "#"
+            }
+          />
         ))}
       </div>
 
@@ -126,9 +140,9 @@ export default function DashboardPage() {
   );
 }
 
-function StatCard({ label, value, icon: Icon, color, link }) {
+function StatCard({ label, value, icon: Icon, color, link, to = "#" }) {
   return (
-    <div className="card p-6 flex flex-col group cursor-pointer hover:border-orange-200 transition-all duration-300">
+    <Link to={to} className="card p-6 flex flex-col group cursor-pointer hover:border-orange-200 transition-all duration-300">
       <div className="flex items-center justify-between mb-5">
         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-xl ${color} transition-transform group-hover:scale-110`}>
           <Icon size={22} strokeWidth={2.5} />
@@ -142,7 +156,7 @@ function StatCard({ label, value, icon: Icon, color, link }) {
       <div className="mt-5 pt-5 border-t border-slate-50">
         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-orange-600 transition-colors">{link}</span>
       </div>
-    </div>
+    </Link>
   );
 }
 

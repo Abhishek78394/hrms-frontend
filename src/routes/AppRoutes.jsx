@@ -11,6 +11,7 @@ const DashboardPage = lazy(() => import("../pages/DashboardPage"));
 const EmployeesPage = lazy(() => import("../pages/EmployeesPage"));
 const EmployeeFormPage = lazy(() => import("../pages/EmployeeFormPage"));
 const AttendancePage = lazy(() => import("../pages/AttendancePage"));
+const EmployeeAttendanceDetail = lazy(() => import("../pages/EmployeeAttendanceDetail"));
 const LeavesPage = lazy(() => import("../pages/LeavesPage"));
 const PayrollPage = lazy(() => import("../pages/PayrollPage"));
 const RecruitmentPage = lazy(() => import("../pages/RecruitmentPage"));
@@ -37,6 +38,7 @@ export default function AppRoutes() {
             <Route path="/employees/new" element={<EmployeeFormPage />} />
             <Route path="/employees/:id/edit" element={<EmployeeFormPage />} />
             <Route path="/attendance" element={<AttendancePage />} />
+            <Route path="/attendance/employee/:id" element={<EmployeeAttendanceDetail />} />
             <Route path="/leaves" element={<LeavesPage />} />
             <Route path="/payroll" element={<PayrollPage />} />
             <Route path="/recruitment" element={<RecruitmentPage />} />
@@ -46,6 +48,8 @@ export default function AppRoutes() {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/ess/profile" element={<ESSProfilePage />} />
             <Route path="/ess/leave" element={<LeavesPage />} />
+            <Route path="/ess/attendance" element={<AttendancePage />} />
+            <Route path="/ess/payslips" element={<PayrollPage />} />
             <Route path="/compliance" element={<CompliancePage />} />
           </Route>
         </Route>

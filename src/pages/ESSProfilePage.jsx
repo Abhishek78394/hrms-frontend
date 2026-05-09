@@ -1,12 +1,68 @@
-import { useSelector } from "react-redux";
-import { User, Mail, Phone, MapPin, Briefcase, Calendar, Shield, Edit, Info } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { User, Mail, Phone, MapPin, Briefcase, Calendar, Shield, Edit, Info, Plus } from "lucide-react";
 import Button from "../components/ui/Button";
+import { apiGet } from "../services/apiClient";
+import api from "../api/axios";
+import { toast } from "react-hot-toast";
+import { updateUser } from "../features/auth/authSlice";
 
 export default function ESSProfilePage() {
+  const dispatch = useDispatch();
   const user = useSelector((s) => s.auth.user);
+  const [profile, setProfile] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    address: "",
+    about: ""
+  });
 
-  // Extract initial for avatar fallback
-  const initial = user?.fullName ? user.fullName.charAt(0) : (user?.username ? user.username.charAt(0) : "U");
+  const fetchProfile = async () => {
+     try {
+        const res = await apiGet("/employees/me");
+        setProfile(res.data);
+        if (res.data) {
+          setFormData({
+            firstName: res.data.firstName || "",
+            lastName: res.data.lastName || "",
+            phone: res.data.phone || "",
+            address: res.data.address || "",
+            about: res.data.about || ""
+          });
+        }
+     } catch (e) {
+        console.error("Profile fetch failed", e);
+     }
+  };
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    try {
+       const response = await api.patch("/employees/me", formData);
+       toast.success("Profile updated successfully");
+       
+       // Update global auth state
+       dispatch(updateUser({ 
+         firstName: formData.firstName, 
+         lastName: formData.lastName,
+         fullName: `${formData.firstName} ${formData.lastName}`
+       }));
+
+       setIsEditModalOpen(false);
+       fetchProfile();
+    } catch (e) {
+       toast.error("Failed to update profile");
+    }
+  };
+
+  const profileData = profile || user;
 
   return (
     <div className="max-w-5xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
@@ -20,25 +76,27 @@ export default function ESSProfilePage() {
             <div className="flex flex-col md:flex-row items-center gap-8">
               <div className="w-40 h-40 rounded-[2.5rem] border-[6px] border-white overflow-hidden shadow-2xl bg-white ring-1 ring-slate-100">
                 <img
-                  src={user?.profileImage || `https://ui-avatars.com/api/?name=${user?.fullName || user?.username}&background=f1f5f9&color=475569&size=256&bold=true`}
+                  src={profileData?.profileImage || `https://ui-avatars.com/api/?name=${profileData?.fullName || profileData?.firstName || "User"}&background=f1f5f9&color=475569&size=256&bold=true`}
                   alt="Avatar"
                   className="w-full h-full object-cover transform hover:scale-110 transition-transform duration-700"
                 />
               </div>
               <div className="text-center md:text-left mb-4">
                 <div className="flex items-center justify-center md:justify-start gap-3">
-                  <h1 className="text-4xl font-black text-slate-900 tracking-tight">{user?.fullName || user?.username || "User Profile"}</h1>
+                  <h1 className="text-4xl font-black text-slate-900 tracking-tight">{profileData?.fullName || (profileData?.firstName + " " + profileData?.lastName) || "User Profile"}</h1>
                   <div className="px-3 py-1 bg-orange-50 text-orange-600 text-[10px] font-black uppercase rounded-lg border border-orange-100 shadow-sm">Verified</div>
                 </div>
                 <p className="text-sm font-black text-slate-400 uppercase tracking-[0.3em] mt-2 flex items-center justify-center md:justify-start gap-2">
                   <Shield size={14} className="text-orange-500" />
-                  {user?.role || "Team Member"}
+                  {profileData?.role || "Team Member"}
                 </p>
               </div>
             </div>
             <div className="flex gap-4 mb-2">
-              <button className="px-8 py-3 bg-slate-50 text-slate-600 rounded-2xl text-sm font-black hover:bg-slate-100 transition-all border border-slate-200">Export PDF</button>
-              <Button className="flex items-center gap-3 px-8 py-3 rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 shadow-xl shadow-orange-100">
+              <Button 
+                onClick={() => setIsEditModalOpen(true)}
+                className="flex items-center gap-3 px-8 py-3 rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 shadow-xl shadow-orange-100"
+              >
                 <Edit size={18} /> Update Profile
               </Button>
             </div>
@@ -58,9 +116,9 @@ export default function ESSProfilePage() {
               Contact Information
             </h3>
             <div className="space-y-6">
-              <InfoItem icon={Mail} label="Professional Email" value={user?.email || "Not Provided"} />
-              <InfoItem icon={Phone} label="Direct Contact" value={user?.phone || "+1 (555) 000-0000"} />
-              <InfoItem icon={MapPin} label="Office Location" value="HQ - New York, USA" />
+              <InfoItem icon={Mail} label="Professional Email" value={profileData?.email || "Not Provided"} />
+              <InfoItem icon={Phone} label="Direct Contact" value={profileData?.phone || "+91 00000 00000"} />
+              <InfoItem icon={MapPin} label="Office Location" value={profileData?.address || "HQ - Main Office"} />
             </div>
           </div>
 
@@ -73,9 +131,9 @@ export default function ESSProfilePage() {
               Employment Details
             </h3>
             <div className="space-y-6">
-              <InfoItem icon={Briefcase} label="Current Department" value={user?.department || "General Operations"} />
-              <InfoItem icon={Calendar} label="Date of Joining" value={user?.joiningDate ? new Date(user.joiningDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "Jan 15, 2024"} />
-              <InfoItem icon={Shield} label="Employee ID" value={user?.employeeId || "EMP-0012"} />
+              <InfoItem icon={Briefcase} label="Current Department" value={profileData?.department || "General Operations"} />
+              <InfoItem icon={Calendar} label="Date of Joining" value={profileData?.joiningDate ? new Date(profileData.joiningDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "Not Set"} />
+              <InfoItem icon={Shield} label="Employee ID" value={profileData?.employeeId || "N/A"} />
             </div>
           </div>
         </div>
@@ -90,7 +148,7 @@ export default function ESSProfilePage() {
               <h3 className="text-xl font-black text-slate-900">About Me</h3>
             </div>
             <p className="text-slate-600 leading-relaxed text-lg">
-              {user?.about || "Senior professional dedicated to driving organizational excellence through innovation and collaborative leadership. Committed to maintaining the highest standards of the NexHR ecosystem."}
+              {profileData?.about || "No profile description provided yet."}
             </p>
           </div>
 
@@ -109,6 +167,92 @@ export default function ESSProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Edit Profile Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-300">
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                 <h3 className="text-lg font-black text-slate-800 tracking-tight">Edit Profile</h3>
+                 <button onClick={() => setIsEditModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                    <Plus size={20} className="rotate-45" />
+                 </button>
+              </div>
+
+              <form onSubmit={handleUpdate} className="p-6 space-y-4">
+                 <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">First Name</label>
+                       <input 
+                          type="text" 
+                          required
+                          value={formData.firstName}
+                          onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 focus:bg-white focus:border-slate-300 rounded-xl outline-none transition-all text-sm font-semibold text-slate-700" 
+                       />
+                    </div>
+                    <div className="space-y-1">
+                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Last Name</label>
+                       <input 
+                          type="text" 
+                          required
+                          value={formData.lastName}
+                          onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 focus:bg-white focus:border-slate-300 rounded-xl outline-none transition-all text-sm font-semibold text-slate-700" 
+                       />
+                    </div>
+                 </div>
+
+                 <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Phone</label>
+                    <input 
+                       type="text" 
+                       maxLength="10"
+                       value={formData.phone}
+                       onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          if (val.length <= 10) setFormData({...formData, phone: val});
+                       }}
+                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 focus:bg-white focus:border-slate-300 rounded-xl outline-none transition-all text-sm font-semibold text-slate-700" 
+                    />
+                 </div>
+
+                 <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Location</label>
+                    <input 
+                       type="text" 
+                       value={formData.address}
+                       onChange={(e) => setFormData({...formData, address: e.target.value})}
+                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 focus:bg-white focus:border-slate-300 rounded-xl outline-none transition-all text-sm font-semibold text-slate-700" 
+                    />
+                 </div>
+
+                 <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">About</label>
+                    <textarea 
+                       rows="2"
+                       value={formData.about}
+                       onChange={(e) => setFormData({...formData, about: e.target.value})}
+                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 focus:bg-white focus:border-slate-300 rounded-xl outline-none transition-all text-sm font-semibold text-slate-700 resize-none" 
+                    ></textarea>
+                 </div>
+
+                 <div className="pt-2 flex gap-2">
+                    <button 
+                      type="button" 
+                      onClick={() => setIsEditModalOpen(false)}
+                      className="flex-1 py-2.5 text-xs font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <Button type="submit" className="flex-[2] py-2.5 rounded-xl bg-slate-900 text-white hover:bg-slate-800 border-none text-xs font-bold uppercase tracking-widest shadow-none">
+                       Update Profile
+                    </Button>
+                 </div>
+              </form>
+           </div>
+        </div>
+      )}
     </div>
   );
 }

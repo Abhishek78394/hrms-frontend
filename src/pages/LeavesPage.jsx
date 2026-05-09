@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useSelector } from "react-redux";
+import { useLocation } from "react-router-dom";
 import { 
   Plus, 
   Check, 
@@ -25,6 +26,8 @@ import { apiGet, apiPost, apiPatch } from "../services/apiClient";
 
 export default function LeavesPage() {
   const user = useSelector((s) => s.auth.user);
+  const location = useLocation();
+  const isSelfService = location.pathname.startsWith('/ess');
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -49,11 +52,18 @@ export default function LeavesPage() {
     supportingDocument: "" 
   });
   const fileInputRef = useRef(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const fetchLeaves = async () => {
+    if (isLoading) return;
     try {
-      const res = await apiGet("/leaves");
-      setLeaves(res.data || []);
+      setIsLoading(true);
+      const res = await apiGet(`/leaves?t=${Date.now()}${isSelfService ? '&self=true' : ''}`);
+      console.log("API RAW RES:", res);
+      
+      // Support both { success: true, data: [] } and raw []
+      const leavesData = Array.isArray(res) ? res : (res?.data || []);
+      setLeaves(leavesData);
       
       if (user?.role !== 'Admin') {
         const balRes = await apiGet("/leaves/balance");
@@ -62,13 +72,17 @@ export default function LeavesPage() {
         }
       }
     } catch (e) {
-      console.error(e);
+      console.error("Fetch Leaves Error:", e);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchLeaves();
-  }, []);
+    if (user) {
+      fetchLeaves();
+    }
+  }, [user?._id]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -129,9 +143,13 @@ export default function LeavesPage() {
 
   const filteredLeaves = leaves.filter(l => {
     const matchesStatus = activeTab === 'all' || l.status === activeTab;
-    const fullName = `${l.employeeId?.firstName} ${l.employeeId?.lastName}`.toLowerCase();
+    const firstName = l.employeeId?.firstName || '';
+    const lastName = l.employeeId?.lastName || '';
+    const empId = l.employeeId?.employeeId || '';
+    const fullName = `${firstName} ${lastName}`.toLowerCase();
+    
     const matchesSearch = fullName.includes(searchQuery.toLowerCase()) || 
-                          l.employeeId?.employeeId?.toLowerCase().includes(searchQuery.toLowerCase());
+                          empId.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
@@ -147,7 +165,7 @@ export default function LeavesPage() {
              <p className="text-sm text-slate-500 font-medium tracking-wide">System active and up to date</p>
           </div>
         </div>
-        {user?.role !== 'Admin' && (
+        {isSelfService && (
           <button 
             onClick={() => setShowForm(true)}
             className="px-8 py-3 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-800 transition-all active:scale-95 shadow-sm"
@@ -158,7 +176,7 @@ export default function LeavesPage() {
       </div>
 
       {/* Simplified Metrics */}
-      {user?.role !== 'Admin' && (
+      {isSelfService && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
           <SimpleMetric label="Annual Leave" current={balances.vacation.used.toString().padStart(2, '0')} total={balances.vacation.total.toString()} />
           <SimpleMetric label="Medical Leave" current={balances.sick.used.toString().padStart(2, '0')} total={balances.sick.total.toString()} />
@@ -265,7 +283,7 @@ export default function LeavesPage() {
                        </td>
                        <td className="py-6 text-right align-top">
                           <div className="flex items-center justify-end gap-1">
-                             {l.status === 'pending' && (user?.role === 'Admin' || (user?.role === 'HR' && l.employeeId?.userId !== user?._id)) ? (
+                             {l.status === 'pending' && (user?.role === 'Admin' || (user?.role === 'HR' && l.employeeId?.email !== user?.email)) ? (
                                 <>
                                   <button onClick={() => setActionModal({ show: true, leaveId: l._id, status: 'approved', reason: '' })} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors" title="Approve"><Check size={18} /></button>
                                   <button onClick={() => setActionModal({ show: true, leaveId: l._id, status: 'rejected', reason: '' })} className="p-2 text-rose-600 hover:bg-rose-50 rounded-md transition-colors" title="Reject"><X size={18} /></button>

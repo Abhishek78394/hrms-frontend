@@ -19,7 +19,12 @@ const authSlice = createSlice({
     loading: false,
     error: null
   },
-  reducers: {},
+  reducers: {
+    updateUser: (s, a) => {
+      s.user = { ...s.user, ...a.payload };
+      authStorage.set({ user: s.user, accessToken: s.accessToken, refreshToken: s.refreshToken });
+    }
+  },
   extraReducers: (builder) => {
     builder
       .addCase(login.pending, (s) => { s.loading = true; s.error = null; })
@@ -27,7 +32,9 @@ const authSlice = createSlice({
         s.loading = false;
         s.user = a.payload.user;
         s.accessToken = a.payload.accessToken;
-        s.refreshToken = a.payload.refreshToken || s.refreshToken;
+        if (a.payload.refreshToken) {
+          s.refreshToken = a.payload.refreshToken;
+        }
         s.isAuthenticated = true;
         authStorage.set({ user: s.user, accessToken: s.accessToken, refreshToken: s.refreshToken });
       })
@@ -47,4 +54,5 @@ const authSlice = createSlice({
       });
   }
 });
+export const { updateUser } = authSlice.actions;
 export default authSlice.reducer;

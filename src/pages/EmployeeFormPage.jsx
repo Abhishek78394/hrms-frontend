@@ -66,11 +66,12 @@ const employeeSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters").optional().or(z.literal("")),
   confirmPassword: z.string().optional().or(z.literal("")),
-  phone: z.string().min(10, "Phone number must be at least 10 digits"),
+  phone: z.string().regex(/^[0-9]{10}$/, "Phone number must be exactly 10 digits"),
   department: z.string().min(1, "Please select a department"),
   designation: z.string().min(1, "Please select a designation"),
   status: z.string().min(1, "Status is required"),
   role: z.string().min(1, "Role is required"),
+  salary: z.coerce.number().min(0, "Salary must be a positive number"),
   about: z.string().min(10, "Bio must be at least 10 characters"),
   profileImage: z.string().optional(),
 }).refine((data) => {
@@ -129,13 +130,16 @@ export default function EmployeeFormPage() {
   }, [id, setValue]);
 
   useEffect(() => {
-    if (id && !employee) {
+    if (id) {
       dispatch(fetchEmployeeById(id));
+    } else {
+      reset({ role: "Employee", status: "Active", firstName: "", lastName: "", email: "", phone: "", about: "", salary: 0 });
+      setPreviewImage(null);
     }
-  }, [id, employee, dispatch]);
+  }, [id, dispatch, reset]);
 
   useEffect(() => {
-    if (employee) {
+    if (id && employee) {
       const data = { ...employee };
       if (data.joiningDate) {
         data.joiningDate = new Date(data.joiningDate).toISOString().split("T")[0];
@@ -143,7 +147,7 @@ export default function EmployeeFormPage() {
       reset(data);
       if (data.profileImage) setPreviewImage(data.profileImage);
     }
-  }, [employee, reset]);
+  }, [employee, reset, id]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -282,7 +286,19 @@ export default function EmployeeFormPage() {
                    </>
                  )}
 
-                 <FormField label="Phone Number" name="phone" register={register} error={errors.phone} required placeholder="+1 (555) 000-0000" />
+                 <FormField 
+                    label="Phone Number" 
+                    name="phone" 
+                    register={register} 
+                    error={errors.phone} 
+                    required 
+                    placeholder="e.g. 9876543210"
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, "").slice(0, 10);
+                      e.target.value = val;
+                      register("phone").onChange(e);
+                    }}
+                 />
                  
                  <div className="space-y-1.5">
                     <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Department</label>
@@ -304,13 +320,15 @@ export default function EmployeeFormPage() {
                        <select {...register("designation")} className="w-full bg-white border border-slate-200 rounded-2xl py-3 px-5 text-sm font-bold outline-none appearance-none focus:ring-2 focus:ring-orange-100 focus:border-orange-500 transition-all cursor-pointer">
                           <option value="">Select Designation</option>
                           {DESIGNATIONS[selectedRole || "Employee"]?.map(desig => (
-                            <option key={desig} value={desig}>{desig}</option>
+                             <option key={desig} value={desig}>{desig}</option>
                           ))}
                        </select>
                        <ChevronDown size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     </div>
                     {errors.designation && <p className="text-[10px] font-bold text-rose-500 mt-1 ml-1">{errors.designation.message}</p>}
                  </div>
+
+                 <FormField label="Base Salary (₹)" name="salary" register={register} error={errors.salary} required type="number" placeholder="50000" />
 
                  <div className="md:col-span-2 space-y-1.5">
                     <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1">

@@ -53,9 +53,10 @@ export default function Sidebar() {
       title: "Self Service",
       items: [
         { label: "My Profile", to: "/ess/profile", icon: UserCircle },
-        { label: "Apply Leave", to: "/ess/leave", icon: HandIcon },
-        { label: "My Attendance", to: "/ess/attendance", icon: CalendarCheck },
-        { label: "My Payslips", to: "/ess/payslips", icon: CreditCard },
+        { label: "Apply Leave", to: "/ess/leave", icon: HandIcon, roles: ["HR", "Employee"] },
+        { label: "My Attendance", to: "/ess/attendance", icon: CalendarCheck, roles: ["HR", "Employee"] },
+        { label: "My Payslips", to: "/ess/payslips", icon: CreditCard, roles: ["HR", "Employee"] },
+        { label: "My Performance", to: "/performance", icon: BarChart3, roles: ["HR", "Employee"] },
       ]
     }
   ];
