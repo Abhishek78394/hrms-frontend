@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+body {
+  @apply bg-slate-50 text-slate-800 antialiased;
+}
+
+.card {
+  @apply rounded-2xl bg-white shadow-sm border border-slate-100;
+}
