@@ -265,7 +265,7 @@ export default function LeavesPage() {
                        </td>
                        <td className="py-6 text-right align-top">
                           <div className="flex items-center justify-end gap-1">
-                             {l.status === 'pending' && (user?.role === 'Admin' || user?.role === 'HR') ? (
+                             {l.status === 'pending' && (user?.role === 'Admin' || (user?.role === 'HR' && l.employeeId?.userId !== user?._id)) ? (
                                 <>
                                   <button onClick={() => setActionModal({ show: true, leaveId: l._id, status: 'approved', reason: '' })} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors" title="Approve"><Check size={18} /></button>
                                   <button onClick={() => setActionModal({ show: true, leaveId: l._id, status: 'rejected', reason: '' })} className="p-2 text-rose-600 hover:bg-rose-50 rounded-md transition-colors" title="Reject"><X size={18} /></button>
